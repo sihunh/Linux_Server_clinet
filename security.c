@@ -32,6 +32,11 @@
 #include <linux/string.h>
 #include <net/flow.h>
 
+
+/* Export set/unset filter function */
+EXPORT_SYMBOL(security_bprm_check_set_process_filter);
+EXPORT_SYMBOL(security_bprm_check_unset_process_filter);
+
 #define MAX_LSM_EVM_XATTR	2
 
 /* Maximum number of letters for an LSM name string */
@@ -43,9 +48,6 @@ typedef int (*security_bprm_check_func)(struct linux_binprm *bprm);
 /* Filter function global instance */
 security_bprm_check_func process_filter_func = 0;
 /* Set filter for execution of program */
-/* Export set/unset filter function */
-EXPORT_SYMBOL(security_bprm_check_set_process_filter);
-EXPORT_SYMBOL(security_bprm_check_unset_process_filter);
 
 struct security_hook_heads security_hook_heads __lsm_ro_after_init;
 static ATOMIC_NOTIFIER_HEAD(lsm_notifier_chain);
