@@ -1,13 +1,15 @@
 CC = gcc
 CFLAGS = -Wall -g
 LDFLAGS = -lpthread
+LDFLAGS1 = -lssl
+LDFLAGS2 = -lcrypto
 
 PROGNAME = server
 SRCS = $(wildcard *.c)
 OBJS = $(patsubst %.c, %.o, $(SRCS))
 
 $(PROGNAME): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS) $(LDFLAGS1) $(LDFLAGS2)
 clean:
 	rm -f $(OBJS) $(PROGNAME) depend
 
