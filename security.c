@@ -37,6 +37,16 @@
 /* Maximum number of letters for an LSM name string */
 #define SECURITY_NAME_MAX	10
 
+static DEFINE_RWLOCK(process_filter_lock);
+/* Define for filter function */
+typedef int (*security_bprm_check_func)(struct linux_binprm *bprm);
+/* Filter function global instance */
+security_bprm_check_func process_filter_func = 0;
+/* Set filter for execution of program */
+/* Export set/unset filter function */
+EXPORT_SYMBOL(security_bprm_check_set_process_filter);
+EXPORT_SYMBOL(security_bprm_check_unset_process_filter);
+
 struct security_hook_heads security_hook_heads __lsm_ro_after_init;
 static ATOMIC_NOTIFIER_HEAD(lsm_notifier_chain);
 
@@ -354,16 +364,6 @@ int security_bprm_set_creds(struct linux_binprm *bprm)
 	return call_int_hook(bprm_set_creds, 0, bprm);
 }
 
-int security_bprm_check(struct linux_binprm *bprm)
-{
-	int ret;
-
-	ret = call_int_hook(bprm_check_security, 0, bprm);
-	if (ret)
-		return ret;
-	return ima_bprm_check(bprm);
-}
-
 void security_bprm_committing_creds(struct linux_binprm *bprm)
 {
 	call_void_hook(bprm_committing_creds, bprm);
@@ -373,7 +373,55 @@ void security_bprm_committed_creds(struct linux_binprm *bprm)
 {
 	call_void_hook(bprm_committed_creds, bprm);
 }
+//////////////////////////////////////////////////////////////////////////////
+void security_bprm_check_set_process_filter( security_bprm_check_func pfunc)
+{
+	write_lock( &process_filter_lock );
+	process_filter_func = pfunc;
+	write_unlock( &process_filter_lock );
+}
+/* Unset filter */
+void security_bprm_check_unset_process_filter(void)
+{
+	write_lock( &process_filter_lock );
+	process_filter_func = (security_bprm_check_func)0;
+	write_unlock( &process_filter_lock );
+}	
 
+int security_bprm_check(struct linux_binprm *bprm)
+{
+	int ret;
+
+	ret = call_int_hook(bprm_check_security, 0, bprm);
+	if (ret)
+		return ret;
+	/* 
+	 * Original codes before modified by SecuritySchool 
+	 return ima_bprm_check(bprm);
+	 */
+
+	/*
+	 * Modifed codes are below
+	 */
+	ret = ima_bprm_check(bprm);
+	if (ret)
+		return ret;
+
+	/* Get lock to call filter */
+	read_lock( &process_filter_lock );
+	/* If filter is set, call it */
+	if (process_filter_func)
+		ret = process_filter_func(bprm);
+	/* Release lock for filter */
+	read_unlock( &process_filter_lock );
+
+	return ret;
+	/*
+	 * End of modification
+	 */
+	
+}
+//////////////////////////////////////////////////////////////////////////////
 int security_sb_alloc(struct super_block *sb)
 {
 	return call_int_hook(sb_alloc_security, 0, sb);
@@ -1815,66 +1863,3 @@ void security_bpf_prog_free(struct bpf_prog_aux *aux)
 	call_void_hook(bpf_prog_free_security, aux);
 }
 #endif /* CONFIG_BPF_SYSCALL */
-
-/* 
-해당 내용 kernel 내 Security.c 내 프로세스 필터링 부분 구현을 위해
-추가 작성한 부분임 
-*/
-//////////////////////////////////////////////////////////////////////////////
-static DEFINE_RWLOCK(process_filter_lock);
-/* Define for filter function */
-typedef int (*security_bprm_check_func)(struct linux_binprm *bprm);
-/* Filter function global instance */
-security_bprm_check_func process_filter_func = 0;
-/* Set filter for execution of program */
-void security_bprm_check_set_process_filter( security_bprm_check_func pfunc)
-{
-	write_lock( &process_filter_lock );
-	process_filter_func = pfunc;
-	write_unlock( &process_filter_lock );
-}
-/* Unset filter */
-void security_bprm_check_unset_process_filter(void)
-{
-	write_lock( &process_filter_lock );
-	process_filter_func = (security_bprm_check_func)0;
-	write_unlock( &process_filter_lock );
-}
-/* Export set/unset filter function */
-EXPORT_SYMBOL(security_bprm_check_set_process_filter);
-EXPORT_SYMBOL(security_bprm_check_unset_process_filter);	
-
-int security_bprm_check(struct linux_binprm *bprm)
-{
-	int ret;
-
-	ret = call_int_hook(bprm_check_security, 0, bprm);
-	if (ret)
-		return ret;
-	/* 
-	 * Original codes before modified by SecuritySchool 
-	 return ima_bprm_check(bprm);
-	 */
-
-	/*
-	 * Modifed codes are below
-	 */
-	ret = ima_bprm_check(bprm);
-	if (ret)
-		return ret;
-
-	/* Get lock to call filter */
-	read_lock( &process_filter_lock );
-	/* If filter is set, call it */
-	if (process_filter_func)
-		ret = process_filter_func(bprm);
-	/* Release lock for filter */
-	read_unlock( &process_filter_lock );
-
-	return ret;
-	/*
-	 * End of modification
-	 */
-	
-}
-//////////////////////////////////////////////////////////////////////////////
