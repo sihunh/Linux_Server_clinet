@@ -60,14 +60,14 @@ int main(int argc, char *argv[])
 
    if ( pthread_create (&handler_thread, NULL, Server_directory_monitor, 0) < 0)
    {
-      perror("[SERVER] Fail to pthread_create()");
+      perror("[Vaccine] Fail to pthread_create()");
       return 1;
    }
    // Create socket listen
    sock_desc = socket(AF_INET, SOCK_STREAM, 0);
    if (sock_desc == -1)
    {
-      perror("[SERVER] Failed to create socket");
+      perror("[Vaccine] Failed to create socket");
       printf("Error code: %d\n", errno);
       return 1;
    }
@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
    
    if(signal(SIGPIPE, SIG_IGN) == SIG_ERR)
    {
-      perror("[SERVER] Fail to signal()");
+      perror("[Vaccine] Fail to signal()");
       printf("Error code: %d\n", errno);
       return 1;
    }
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
    // Bind socket and address
    if(bind(sock_desc,(struct sockaddr*)&serv_addr, sizeof( serv_addr)) < 0)
    {
-      perror("[SERVER] Failed to bind socket");
+      perror("[Vaccine] Failed to bind socket");
       printf("Error code: %d\n", errno);
       return 1;
 
@@ -99,20 +99,20 @@ int main(int argc, char *argv[])
    // Listen incoming connection
    #define Server_ADDR_BACKLOG 100
    listen(sock_desc, Server_ADDR_BACKLOG);
-   printf("[SERVER] 클라이언트 기다리는중 ...\n");
+   printf("[Vaccine] 클라이언트 기다리는중 ...\n");
    
    // Accept connection form client
    while((cli_sock = accept(sock_desc, (struct sockaddr *)&cli_addr, (socklen_t*)&sock_len)))
    {
-      printf("[SERVER][%d client] 연결되었음\n", cli_sock);
+      printf("[Vaccine][%d client] 연결되었음\n", cli_sock);
       // create thread to handler client
       if( pthread_create( &handler_thread, NULL, Server_client_handler, (void*)(intptr_t)cli_sock) < 0)
       {
-         perror("[SERVER] Fail to create thread.");
+         perror("[Vaccine] Fail to create thread.");
          return 1;
       }
    }
-   printf("[SERVER] exit\n");
+   printf("[Vaccine] exit\n");
    return 0;
 }
 // client handler func
@@ -128,7 +128,7 @@ void * Server_client_handler(void *sock_desc)
    if(0 < read_size)
    {
       cli_msg[SERVER_MAX_MSG-1] = 0;
-      printf("[SERVER][%d client]로부터 수신 : \"%s\"\n", sock, cli_msg);
+      printf("[Vaccine][%d client]로부터 수신 : \"%s\"\n", sock, cli_msg);
       
       do
       {
@@ -137,12 +137,12 @@ void * Server_client_handler(void *sock_desc)
          // send to cli
          if( 0 < send(sock, serv_msg, serv_msg_len, 0))
          {
-            printf("[SERVER][%d client]로 송신 : \"%s\"\n", sock, serv_msg);
+            printf("[Vaccine][%d client]로 송신 : \"%s\"\n", sock, serv_msg);
          }
          else
          {
             pthread_mutex_unlock(&send_lock);
-            perror("[SERVER] Failed to send!");
+            perror("[Vaccine] Failed to send!");
             break;
          }
          pthread_cond_wait(&send_event, &send_lock);
@@ -152,15 +152,15 @@ void * Server_client_handler(void *sock_desc)
    }
    else if(0==read_size)
    {
-      printf("[SERVER][%d client] Disconnected\n", sock);
+      printf("[Vaccine][%d client] Disconnected\n", sock);
    }
    else 
    {
-      perror("[SERVER] Failed to recevie");
+      perror("[Vaccine] Failed to recevie");
    }
    close(sock);
    
-   printf("[SERVER][%d client] EXIT\n", sock);
+   printf("[Vaccine][%d client] EXIT\n", sock);
    return 0;
 }   
 int Server_make_sendmsg(const char * watch_path)
@@ -204,7 +204,7 @@ int Server_make_sendmsg(const char * watch_path)
    } 
    else
    {
-      perror ("[SERVER] Fail to opendir()");
+      perror ("[Vaccine] Fail to opendir()");
    }
    return ret;
 
@@ -233,7 +233,7 @@ int Server_get_sha256(const char *file_path, unsigned char *sha256)
   if(file < 0)
   {
 	  printf("file : %s\n",file_path);
-	  perror("[SERVER] Failed to open");
+	  perror("[Vaccine] Failed to open");
 	  return -1;
   }
   memset(sha256,0,SHA256_DIGEST_LENGTH);
@@ -245,7 +245,7 @@ int Server_get_sha256(const char *file_path, unsigned char *sha256)
   }
  
   SHA256_Final(hash, &sh1a256);
-  printf("[SERVER] file: %s sha256 : \n", file_path);
+  printf("[Vaccine] file: %s sha256 : \n", file_path);
   sha256_hash_string(hash, sha256);
   fclose(file);
  
@@ -261,12 +261,12 @@ void *Server_directory_monitor(void *arg)
    char buffer[SERVER_INOTIFY_BUFFLEN];
    struct inotify_event *event = NULL;
 
-   printf("[SERVER] 모니터링을 시작합니다. \n");
+   printf("[Vaccine] 모니터링을 시작합니다. \n");
 
    fd = inotify_init();
    if (fd < 0)
    {
-      perror("[SERVER] Failed to inotify_init()");
+      perror("[Vaccine] Failed to inotify_init()");
    }
    wd = inotify_add_watch(fd, path_to_watch, IN_CREATE|IN_DELETE|IN_MOVED_FROM|IN_MOVED_TO);
    do
@@ -277,7 +277,7 @@ void *Server_directory_monitor(void *arg)
       read_len = read(fd, buffer, SERVER_INOTIFY_BUFFLEN);
       if(read_len < 0)
       {
-         perror("[SERVER] Failed to read()");
+         perror("[Vaccine] Failed to read()");
       }
       while(event_index < read_len)
       {
@@ -286,17 +286,17 @@ void *Server_directory_monitor(void *arg)
          {
             if(event->mask & IN_CREATE)               
             {
-               printf("[SERVER] %s 파일이 생성이 감지되었습니다. \n", event->name);
+               printf("[Vaccine] %s 파일이 생성이 감지되었습니다. \n", event->name);
                dir_changed = 1;
             }
             else if(event->mask & IN_DELETE)               
             {
-               printf("[SERVER] %s 파일이 삭제가 감지되었습니다. \n", event->name);
+               printf("[Vaccine] %s 파일이 삭제가 감지되었습니다. \n", event->name);
                dir_changed = 1;
             }
             else if(event->mask & IN_MOVED_FROM || event->mask & IN_MOVED_TO)               
             {
-               printf("[SERVER] %s 파일이 이동이 감지되었습니다. \n", event->name);
+               printf("[Vaccine] %s 파일이 이동이 감지되었습니다. \n", event->name);
                dir_changed = 1;
             }
             event_index += SERVER_INOTIFY_SIZE + event->len;
@@ -317,7 +317,7 @@ void *Server_directory_monitor(void *arg)
 
    inotify_rm_watch(fd , wd);
    close( fd );
-   printf("[SERVER] 모니터링 종료\n");
+   printf("[Vaccine] 모니터링 종료\n");
 
    return 0;
 
