@@ -1,7 +1,3 @@
 Modify linux security.c 
 
-
-it is server and client 
-
-
-server can monitoring and process block with clinet file hash
+server can FILE monitoring and process FILTER with clinet file hash
