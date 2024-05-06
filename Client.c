@@ -74,7 +74,7 @@ int Client_get_sha256(struct file* file, unsigned char *sha256);
 
 // Module Init function	
 static int __init Client_init(void){
-	printk(KERN_INFO "[Client] Start Filtering\n" );
+	printk(KERN_INFO "[Vaccine] Start Filtering\n" );
 	// set filter 	
 	security_bprm_check_set_process_filter(process_filter_func);
 
@@ -101,7 +101,7 @@ static void __exit Client_exit(void){
 
 	// unset filter before exit
 	security_bprm_check_unset_process_filter();
-	printk(KERN_INFO "[Client] Terminate\n" );
+	printk(KERN_INFO "[Vaccine] Terminate\n" );
 }
 
 
@@ -114,15 +114,15 @@ static int process_filter_func(struct linux_binprm *bprm)
 
    if(0 == Client_get_sha256(bprm->file, sha256))
    {
-      printk(KERN_INFO "[Client] file : %s, sha256 : ", bprm->filename);
+      printk(KERN_INFO "[Vaccine] file : %s, sha256 : ", bprm->filename);
       Client_print_hex(sha256, SHA256_DIGEST_SIZE);
    }
 
-	printk(KERN_INFO "[Client] New process (file:%s)\n", bprm->filename);
+	printk(KERN_INFO "[Vaccine] New process (file:%s)\n", bprm->filename);
 
 	if( NULL != bprm->filename && NULL != strstr(bprm->filename, "virus") ) // 수정해야함 
 	{
-		printk(KERN_INFO "[Client] file blocked!(file:%s)\n", bprm->filename);
+		printk(KERN_INFO "[Vaccine] file blocked!(file:%s)\n", bprm->filename);
 		return -EACCES;
 	}
 	return 0;
@@ -227,10 +227,10 @@ static int Client_client_func(void *arg)
 				ret = Client_send(sock, cli_msg, strlen(cli_msg), 0);
 				if (0 >= ret)
 				{
-					printk(KERN_ERR "[Client] Send fail");
+					printk(KERN_ERR "[Vaccine] Send fail");
 					break; 
 				}
-				printk("[Client] Sent : \"%s\"\n", cli_msg);
+				printk("[Vaccine] Sent : \"%s\"\n", cli_msg);
 			
 				while(1)
 				{
@@ -238,17 +238,17 @@ static int Client_client_func(void *arg)
 					ret = Client_recv(sock, serv_msg, Client_MAX_MSG-1, 0);
 					if(0 >= ret)
 					{
-						printk(KERN_ERR " [Client] Failed to receive\n");
+						printk(KERN_ERR " [Vaccine] Failed to receive\n");
 						break;
 					}
 					serv_msg[ret] = 0;	
 
-					printk("[Client] Received : \"%s\"\n", serv_msg);
+					printk("[Vaccine] Received : \"%s\"\n", serv_msg);
 				}
 			}
 			else
 			{
-				printk(KERN_ERR "[Client] Failed to connect");
+				printk(KERN_ERR "[Vaccine] Failed to connect");
 				break;
 			}	
 		}while(0);
@@ -260,7 +260,7 @@ static int Client_client_func(void *arg)
 	}
 	else
 	{
-		printk(KERN_ERR "[Client] Could not create socket");
+		printk(KERN_ERR "[Vaccine] Could not create socket");
 	}
 	
 	Client_sock_thread = NULL;
@@ -291,14 +291,14 @@ int Client_get_sha256(struct file* file, unsigned char *sha256)
     if (IS_ERR(handle))
     {
         // 핸들 얻기 실패
-	printk(KERN_ERR "[Client] Fail to get handle");
+	printk(KERN_ERR "[Vaccine] Fail to get handle");
         goto EXIT_ERROR;
     }
     shash = kmalloc(sizeof(struct shash_desc) + crypto_shash_descsize(handle), GFP_KERNEL);
     if (NULL == shash)
     {
         // 메모리 할당 실패
-	printk(KERN_ERR "[Client] Fail to kmalloc()");
+	printk(KERN_ERR "[Vaccine] Fail to kmalloc()");
         goto EXIT_ERROR;
     }
      
@@ -308,14 +308,14 @@ int Client_get_sha256(struct file* file, unsigned char *sha256)
     if (NULL == buff)
     {
         // 메모리 할당 실패
-	printk(KERN_ERR "[Client] Fail to kmalloc()");
+	printk(KERN_ERR "[Vaccine] Fail to kmalloc()");
         goto EXIT_ERROR;
     }
      
     success = crypto_shash_init(shash);
     if (success < 0)
     {
-	printk(KERN_ERR "[Client] Fail to crypto_shash_init()");
+	printk(KERN_ERR "[Vaccine] Fail to crypto_shash_init()");
         goto EXIT_ERROR;
     }   
     while (1)
