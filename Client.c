@@ -120,7 +120,7 @@ static int process_filter_func(struct linux_binprm *bprm)
 
 	printk(KERN_INFO "[Vaccine] New process (file:%s)\n", bprm->filename);
 
-	if( NULL != bprm->filename && NULL != strstr(bprm->filename, "virus") ) // 수정해야함 
+	if( NULL != bprm->filename && NULL != strstr(bprm->filename, "virus") ) // 필터링 부분 수정해야함 
 	{
 		printk(KERN_INFO "[Vaccine] file blocked!(file:%s)\n", bprm->filename);
 		return -EACCES;
